@@ -1,8 +1,6 @@
 import os
-from collections import Counter
 from imblearn.over_sampling import ADASYN
 from joblib import dump
-
 import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -28,6 +26,7 @@ for filename in os.listdir('./dataset/train/images'):
         continue
 
     desc_list.append(des)
+
     label_file = open(os.path.join('dataset/train/labels', os.path.splitext(filename)[0] + '.txt'), 'r')
     label = label_file.read()
     y_train.append(label)
@@ -58,13 +57,11 @@ hist_array = np.vstack(hist_list)
 
 # ---- Balancing the dataset
 X_train_resampled, y_train_resampled = ADASYN().fit_resample(hist_array, y_train)
-print(Counter(y_train_resampled))
-
 
 
 # Training a classifier
 classifier = svm.SVC(kernel="rbf")
-classifier.fit(hist_array, y_train)
+classifier.fit(X_train_resampled, y_train_resampled)
 
 
 # --- Testing the model on testing data
@@ -93,6 +90,7 @@ for filename in os.listdir('./dataset/train/images'):
 hist_array = np.vstack(hist_list)
 y_pred = classifier.predict(hist_array)
 y_pred = y_pred.tolist()
+dump(classifier, 'Models/sift_bow_svm_model.joblib')
 
 # Compare the actual labels with predicted labels by the model
 fig, axes = plt.subplots(2, 5, figsize=(14, 7), sharex=True, sharey=True)
@@ -104,15 +102,27 @@ for i in range(10):
     ax[i].set_title(f'Label: {y_test[i]} \n Prediction: {y_pred[i]}')
     ax[i].set_axis_off()
 fig.tight_layout()
-plt.show()
+#plt.show()
 
 
 
 print(f"""Classification report for classifier {classifier}:\n
       {metrics.classification_report(y_test, y_pred)}""")
 
-dump(classifier, 'bow_svm_model.joblib')
 
+def format_image_for_classification(img):
+    hist_list = []
+    kp, des = sift.detectAndCompute(img, None)
+    if des is None:
+        return None
 
+    hist = np.zeros(k)
+    idx = kmeans.predict(des)
+    for j in idx:
+        hist[j] = hist[j] + (1 / len(des))
+    hist_list.append(hist)
+    hist_array = np.vstack(hist_list)
+
+    return hist_array
 
 
