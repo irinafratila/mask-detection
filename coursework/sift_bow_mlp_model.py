@@ -62,56 +62,52 @@ X_train_resampled, y_train_resampled = ADASYN().fit_resample(hist_array, y_train
 
 
 # Training a classifier
-#classifier = svm.SVC(kernel="rbf")
 classifier = MLPClassifier(hidden_layer_sizes=(50,), max_iter=100, alpha=1e-4,solver='sgd', verbose=True, random_state=1,learning_rate_init=.1)
-
 classifier.fit(X_train_resampled, y_train_resampled)
-
-
-# --- Testing the model on testing data
-hist_list = []
-y_test = []
-for filename in os.listdir('./dataset/train/images'):
-    img = cv2.imread(os.path.join('dataset/train/images', filename))
-    img = img_as_ubyte(img)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    kp, des = sift.detectAndCompute(img, None)
-    if des is None:
-        continue
-
-    label_file = open(os.path.join('dataset/train/labels', os.path.splitext(filename)[0] + '.txt'), 'r')
-    label = label_file.read()
-    y_test.append(label)
-
-    hist = np.zeros(k)
-    idx = kmeans.predict(des)
-    for j in idx:
-        hist[j] = hist[j] + (1/len(des))
-
-    hist_list.append(hist)
-
-hist_array = np.vstack(hist_list)
-y_pred = classifier.predict(hist_array)
-y_pred = y_pred.tolist()
 dump(classifier, 'Models/sift_bow_mlp_model.joblib')
 
-# Compare the actual labels with predicted labels by the model
-fig, axes = plt.subplots(2, 5, figsize=(14, 7), sharex=True, sharey=True)
-ax = axes.ravel()
+def test_model():
+    # --- Testing the model on testing data
+    hist_list = []
+    y_test = []
+    for filename in os.listdir('./dataset/train/images'):
+        img = cv2.imread(os.path.join('dataset/train/images', filename))
+        img = img_as_ubyte(img)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-for i in range(10):
-    test_img = np.asarray(Image.open('./dataset/test/images/' + X_test_image_filenames[i]))
-    ax[i].imshow(test_img)
-    ax[i].set_title(f'Label: {y_test[i]} \n Prediction: {y_pred[i]}')
-    ax[i].set_axis_off()
-fig.tight_layout()
-#plt.show()
+        kp, des = sift.detectAndCompute(img, None)
+        if des is None:
+            continue
 
+        label_file = open(os.path.join('dataset/train/labels', os.path.splitext(filename)[0] + '.txt'), 'r')
+        label = label_file.read()
+        y_test.append(label)
 
+        hist = np.zeros(k)
+        idx = kmeans.predict(des)
+        for j in idx:
+            hist[j] = hist[j] + (1/len(des))
 
-print(f"""Classification report for classifier {classifier}:\n
-      {metrics.classification_report(y_test, y_pred)}""")
+        hist_list.append(hist)
+
+    hist_array = np.vstack(hist_list)
+    y_pred = classifier.predict(hist_array)
+    y_pred = y_pred.tolist()
+
+    # Compare the actual labels with predicted labels by the model
+    fig, axes = plt.subplots(2, 5, figsize=(14, 7), sharex=True, sharey=True)
+    ax = axes.ravel()
+
+    for i in range(10):
+        test_img = np.asarray(Image.open('./dataset/test/images/' + X_test_image_filenames[i]))
+        ax[i].imshow(test_img)
+        ax[i].set_title(f'Label: {y_test[i]} \n Prediction: {y_pred[i]}')
+        ax[i].set_axis_off()
+    fig.tight_layout()
+    #plt.show()
+
+    print(f"""Classification report for classifier {classifier}:\n
+          {metrics.classification_report(y_test, y_pred)}""")
 
 
 def format_image_for_classification(img):
