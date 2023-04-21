@@ -85,7 +85,7 @@ for i in range(10):
     image_index = image_index + 1
 
 fig.tight_layout()
-#plt.show()
+plt.show()
 
 
 
