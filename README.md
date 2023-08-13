@@ -1,1 +1,1 @@
-# mask-detection
+The coursework as part of my final year module Computer Vision. Given three sets of images of faces wearing a mask, improperly wearing a mask, or not wearing a mask at all, design computation models to train on the set of images, and then use them to predict for any given imagei fht eperson is wearing a mask or not.  
